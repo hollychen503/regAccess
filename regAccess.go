@@ -44,6 +44,12 @@ func whoamI(w http.ResponseWriter, req *http.Request) {
 	log.Println(string(dump))
 	log.Println("------------------------------------------------")
 
+	uri := req.Header.Get("X-Forwarded-Uri")
+	if uri == "/v2/" {
+		log.Println("Access /v2/. Ignore")
+		return
+	}
+
 	// 获取用户名，密码
 	// Authorization: Basic dGVzdHVzZXI6dGVzdHBhc3N3b3Jk
 	usrpw := req.Header.Get("Authorization")
@@ -116,7 +122,28 @@ func whoamI(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	//  /v2/holly/hello/manifests/latest
+	//  0 1 2     3     4
+	segs := strings.Split(uri, "/")
+	fmt.Println(segs)
+	if len(segs) < 2 {
+		log.Println("Unknown URL, ignore")
+		return
+	}
+	// segs[0] 为空 ！
+	//if segs[2] == "common" { // 暂时不开放 common
+	//	log.Println("Use common namespace.")
+	//	return
+	//}
+
+	if segs[2] != realName {
+		log.Println("namespace name does not matched user name!", segs[2], realName)
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
 	log.Println("Authorized!")
+
 	return
 	/*
 		queryParams := u.Query()
